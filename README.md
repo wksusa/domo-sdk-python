@@ -1,137 +1,173 @@
-# Python3 - Domo API SDK (pydomo)
+# domo-sdk
+
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](http://www.opensource.org/licenses/MIT)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![PyPI](https://img.shields.io/pypi/v/domo-sdk)](https://pypi.org/project/domo-sdk/)
 
-Current Release: 0.3.0
+Modern Python SDK for the Domo API with async support, Pydantic models, and developer token auth.
 
-### Notice - Python 3 Compatibility
+Fork of [domoinc/domo-python-sdk](https://github.com/domoinc/domo-python-sdk) (pydomo), modernized with:
 
-* PyDomo is written for Python3, and is not compatible with Python2
-* Execute scripts via 'python3', and updates via 'pip3'
+- **Async support** via `httpx` (`AsyncDomo` client)
+- **Pydantic v2 models** for all API objects
+- **Developer token auth** (access internal UI APIs like search)
+- **OAuth2 auth** (backward compatible with pydomo)
+- **22+ API clients** covering datasets, AI services, roles, search, cards, activity log, projects, alerts, workflows, dataflows, connectors, embed tokens, files, S3 export, and more
+- **Typed exceptions** (`DomoAuthError`, `DomoNotFoundError`, `DomoRateLimitError`, etc.)
+- **Modern build** with `hatchling`, `ruff`, `mypy`, `pytest`
 
-### About
+## Installation
 
-* The Domo API SDK is the simplest way to automate your Domo instance
-* The SDK streamlines the API programming experience, allowing you to significantly reduce your written code
-* This SDK was written for Python3, and is not compatible with Python2
-* PyDomo has been published to [PyPI](https://pypi.org/project/pydomo/). The SDK can be easily installed via `pip3 install pydomo`, and can be updated via `pip3 install pydomo --upgrade`
+```bash
+pip install domo-sdk
 
-### Features:
-- DataSet and Personalized Data Policy (PDP) Management
-    - Use DataSets for fairly static data sources that only require occasional updates via data replacement
-    - This SDK automates the use of Domo Streams so that uploads are always as fast as possible
-    - Add Personalized Data Policies (PDPs) to DataSets (hide sensitive data from groups of users)
-    - Docs: https://developer.domo.com/docs/domo-apis/data
-- User Management
-    - Create, update, and remove users
-    - Major use case: LDAP/Active Directory synchronization
-    - Docs: https://developer.domo.com/docs/domo-apis/users
-- Group Management
-    - Create, update, and remove groups of users
-    - Docs: https://developer.domo.com/docs/domo-apis/group-apis
-- Page Management
-    - Create, update, and delete pages
-    - Docs: https://developer.domo.com/docs/page-api-reference/page
+# With pandas support
+pip install domo-sdk[pandas]
 
-### Setup
-* Install Python3: https://www.python.org/downloads/
-    * Linux: 'apt-get install python3'
-    * MacOS: 'brew install python3'
-    * Windows: direct download, or use Bash on Windows 10
-* Install PyDomo and its dependencies via `pip3 install pydomo`
-
-### Updates
-* Update your PyDomo package via `pip3 install pydomo --upgrade`
-* View the [changelog](CHANGELOG.md)
-
-### Usage
-Below are examples of how to use the SDK to perform a few common tasks. To run similar code on your system, do the following.
-* Create an API Client on the [Domo Developer Portal](https://developer.domo.com/)
-* Use your API Client id/secret to instantiate pydomo 'Domo()'
-* Multiple API Clients can be used by instantiating multiple 'Domo()' clients
-* Authentication with the Domo API is handled automatically by the SDK
-* If you encounter a 'Not Allowed' error, this is a permissions issue. Please speak with your Domo Administrator.
-```python
-from pydomo import Domo
-
-domo = Domo('client-id','secret',api_host='api.domo.com')
-
-# Download a data set from Domo
-car_data = domo.ds_get('2f09a073-54a4-4269-8c62-b776e67d59f0')
-
-# Create a summary data set, taking the mean of dollars by make and model.
-car_summary = car_data.groupby(['make','model']).agg({'dollars':'mean'}).reset_index()
-
-
-# Create a new data set in Domo with the result, the return value is the data set id of the new data set.
-car_ds = domo.ds_create(car_summary,'Python | Car Summary Data Set','Python | Generated during demo')
-
-# Modify summary and then upload to the data set we already created. The SDK will update the data set schema automatically.
-car_summary2 = car_data.groupby(['make','model'],as_index=False).agg({'dollars':'mean','email':'count'}).reset_index()
-car_update = domo.ds_update(car_ds,car_summary2)
-
-
-# Create PDP Policy
-from pydomo.datasets import Policy, PolicyFilter, FilterOperator, PolicyType, Sorting
-
-# Create policy filters
-pdp_filter = PolicyFilter()
-pdp_filter.column = 'make'  # The DataSet column to filter on
-pdp_filter.operator = FilterOperator.EQUALS
-pdp_filter.values = ['Honda']  # The DataSet row value to filter on
-
-pdp_request = Policy()
-pdp_request.name = 'Python | US East'
-pdp_request.filters = [pdp_filter]
-pdp_request.type = PolicyType.USER
-pdp_request.users = []
-pdp_request.groups = [1631291223]
-
-domo.pdp_create(car_ds,pdp_request)
-
-
-# Interact with groups
-all_groups = domo.groups_list() # List all groups
-all_users = domo.users_list() # List all users
-
-# List all users in US South Division
-domo.groups_list_users(328554991)
-
-added_users = domo.groups_add_users(328554991,2063934980)
-domo.groups_list_users(328554991)
+# For development
+pip install domo-sdk[dev]
 ```
 
-### Available Functions
-The functions in this package match most parts of the API documented at [developer.domo.com](https://developer.domo.com/) and follow a specific convention. Each set of functions is preceeded by the portion of the API it operates on. The following lists all the sets of functions available in this package. For further help, refer to the help function in Python.
-* **Data sets** - This set of functions is designed to transfer data in and out of Domo.
-	* **ds_get** - downloads data from Domo
-	* **ds_create** - creates a new data set
-	* **ds_update** - updates an existing data set, only data sets created by the API can be updated
-	* **ds_meta** - downloads meta data regarding a single data set
-	* **ds_list** - downloads a list of data sets in your Domo instance
-	* **ds_delete** - deletes a data set (be careful)
-	* **ds_query** - allows you to send a query to a data set, Domo will evaluate that query and sends the results back as a list or a tibble
-* **Groups** - This set of functions modifies and creates groups.
-	* **groups_add_users** - adds users to an existing group
-	* **groups_create** - create a group
-	* **groups_delete** - delete an existing group
-	* **groups_list** - list all groups
-	* **groups_remove_users** - remove users from a group
-	* **groups_list_users** - list users in a group
-* **Pages** - functions related to managing Domo pages
-	* **page_update** - update a page
-	* **page_list** - list all pages
-	* **page_get_collections** - list all collections on a page
-	* **page_get** - get information regarding a page
-	* **page_create** - create a page
-* **PDP** - functions to manage PDP
-	* **pdp_update** - update an existing PDP policy
-	* **pdp_list** - list all PDP policies
-	* **pdp_enable** - toggle PDP on and off
-	* **pdp_delete** - delete a PDP policy
-	* **pdp_create** - create a PDP policy
-* **Users** - functions to manage users
-	* **users_delete** - delete a user
-	* **users_update** - update a user
-	* **users_list** - list all users
-	* **users_get** - get a single user record
-	* **users_add** - create a user (or users)
+## Quick Start
+
+### Sync Client
+
+```python
+from domo_sdk import Domo
+
+# OAuth authentication
+domo = Domo(client_id="your-id", client_secret="your-secret")
+
+# Developer token authentication (recommended - full API access)
+domo = Domo(developer_token="your-token", instance_domain="company.domo.com")
+
+# Auto-detect from environment variables
+domo = Domo.from_env()
+
+# Use sub-clients
+datasets = list(domo.datasets.list(limit=10))
+roles = domo.roles.list()
+result = domo.datasets.query("dataset-id", "SELECT * FROM table LIMIT 5")
+```
+
+### Async Client
+
+```python
+from domo_sdk import AsyncDomo
+
+async with AsyncDomo.from_env() as domo:
+    datasets = await domo.datasets.list(limit=10)
+    result = await domo.datasets.query("dataset-id", "SELECT * FROM table LIMIT 5")
+
+    # AI Services
+    response = await domo.ai.text.generate({"prompt": "Summarize this data"})
+    sql = await domo.ai.text.to_sql({"input": "Show top 10 customers by revenue"})
+```
+
+## Environment Variables
+
+```bash
+# Developer Token (recommended - full access including internal APIs)
+DOMO_DEVELOPER_TOKEN=your-developer-token
+DOMO_HOST=company.domo.com
+
+# OAuth (alternative - public API only)
+DOMO_CLIENT_ID=your-client-id
+DOMO_CLIENT_SECRET=your-client-secret
+```
+
+## Available Clients
+
+| Client | Description | Auth |
+|--------|-------------|------|
+| `domo.datasets` | Dataset CRUD, import/export, query, PDP, permissions, versioning | Both |
+| `domo.users` | User management | Both |
+| `domo.groups` | Group management | Both |
+| `domo.pages` | Page and collection management | Both |
+| `domo.streams` | Stream management and multi-part upload | Both |
+| `domo.accounts` | Account management | Both |
+| `domo.roles` | Role and authority management | Both |
+| `domo.search` | Global search and dataset search | Dev token for full search |
+| `domo.cards` | Card CRUD | Both |
+| `domo.activity_log` | Audit log queries | Both |
+| `domo.projects` | Projects, task lists, and tasks | Both |
+| `domo.alerts` | Alert management and subscriptions | Both |
+| `domo.workflows` | Workflow execution and permissions | Both |
+| `domo.dataflows` | Dataflow execution | Both |
+| `domo.connectors` | Connector execution triggers | Both |
+| `domo.embed` | Embed token generation | Both |
+| `domo.files` | File upload/download/permissions | Both |
+| `domo.s3_export` | S3 export management | Both |
+| `domo.ai` | AI Services (sub-clients below) | Both |
+| `domo.ai.text` | Text generation, SQL, summarize, beastmode | Both |
+| `domo.ai.messages` | Chat and tool-use completions | Both |
+| `domo.ai.analysis` | Sentiment, classification, extraction | Both |
+| `domo.ai.media` | Image-to-text, text/image embeddings | Both |
+
+## Pydantic Models
+
+All API objects have corresponding Pydantic v2 models:
+
+```python
+from domo_sdk.models.datasets import DataSet, Column, ColumnType, Schema, QueryResult
+from domo_sdk.models.users import User, CreateUserRequest
+from domo_sdk.models.roles import Role, Authority
+from domo_sdk.models.ai import TextGenerationRequest, ChatRequest, ChatMessage
+from domo_sdk.models.search import SearchQuery, SearchEntity
+```
+
+## Exception Handling
+
+```python
+from domo_sdk.exceptions import (
+    DomoError,           # Base
+    DomoAuthError,       # 401/403
+    DomoNotFoundError,   # 404
+    DomoRateLimitError,  # 429 (includes retry_after)
+    DomoAPIError,        # Generic (includes status_code, response_body)
+    DomoTimeoutError,    # Timeout
+    DomoConnectionError, # Network issues
+)
+
+try:
+    domo.datasets.get("nonexistent-id")
+except DomoNotFoundError:
+    print("Dataset not found")
+except DomoRateLimitError as e:
+    print(f"Rate limited, retry after {e.retry_after}s")
+```
+
+## Migration from pydomo
+
+See [MIGRATION.md](MIGRATION.md) for a detailed guide on migrating from pydomo to domo-sdk.
+
+Key changes:
+- `from pydomo import Domo` → `from domo_sdk import Domo`
+- `Domo(client_id, client_secret)` still works (OAuth mode)
+- New: `Domo(developer_token="...", instance_domain="...")` for developer token auth
+- New: `Domo.from_env()` for environment variable auth
+- New: `AsyncDomo` for async usage
+- All models are now Pydantic v2 (not dict subclasses)
+
+## Development
+
+```bash
+git clone https://github.com/wksusa/domo-sdk-python.git
+cd domo-sdk-python
+python -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+
+# Run tests
+pytest
+
+# Lint
+ruff check src/ tests/
+
+# Type check
+mypy src/domo_sdk/ --ignore-missing-imports
+```
+
+## License
+
+MIT - See [LICENSE.txt](LICENSE.txt)
