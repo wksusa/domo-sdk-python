@@ -30,15 +30,19 @@ class TestAsyncFiles:
     @respx.mock
     async def test_upload(self) -> None:
         client, base_url = _make_async_client()
-        route = respx.post(f"{base_url}/v1/files").mock(
+        # Mock the metadata creation POST
+        respx.post(f"{base_url}/v1/files").mock(
             return_value=Response(
                 200, json={"id": 1, "name": "data.csv"}
             )
         )
+        # Mock the content upload PUT
+        respx.put(f"{base_url}/v1/files/1").mock(
+            return_value=Response(204)
+        )
 
         result = await client.upload(b"hello", "data.csv")
 
-        assert route.called
         assert isinstance(result, File)
         assert result.name == "data.csv"
         await client.transport.close()

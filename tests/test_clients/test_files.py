@@ -20,11 +20,17 @@ class TestFilesCRUD:
             "id": 1,
             "name": "data.csv",
         }
+        transport.put_csv.return_value = None
 
         result = client.upload(b"hello", "data.csv")
 
         assert isinstance(result, File)
         assert result.name == "data.csv"
+        # Verify both the metadata POST and the content upload happened
+        transport.post.assert_called_once()
+        transport.put_csv.assert_called_once_with(
+            "/data/v1/data-files/1", body=b"hello"
+        )
 
     def test_get_details(self) -> None:
         client, transport = _make_client()

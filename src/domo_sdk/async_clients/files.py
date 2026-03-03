@@ -16,10 +16,16 @@ class AsyncFilesClient(AsyncDomoAPIClient):
     async def upload(
         self, file_data: bytes, name: str, **kwargs: Any
     ) -> File:
-        """Upload a new file."""
+        """Upload a new file.
+
+        Creates the file metadata, then uploads the binary content.
+        """
         body: dict[str, Any] = {"name": name, **kwargs}
         data = await self._create(URL_BASE, body)
-        return File.model_validate(data)
+        file = File.model_validate(data)
+        # Upload the actual binary content
+        await self._upload_csv(f"{URL_BASE}/{file.id}", file_data)
+        return file
 
     async def update(self, file_id: str, **kwargs: Any) -> File:
         """Update file metadata."""

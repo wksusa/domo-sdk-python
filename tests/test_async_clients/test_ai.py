@@ -5,30 +5,18 @@ import pytest
 import respx
 from httpx import Response
 
-from domo_sdk.async_clients.base import AsyncDomoAPIClient
+from domo_sdk.async_clients.ai.analysis import AsyncAnalysisClient
+from domo_sdk.async_clients.ai.media import AsyncMediaClient
+from domo_sdk.async_clients.ai.messages import AsyncMessagesClient
+from domo_sdk.async_clients.ai.text import AsyncTextClient
+from domo_sdk.models.ai import (
+    EmbeddingAIResponse,
+    MessagesAIResponse,
+    SentimentAIResponse,
+    TextAIResponse,
+)
 from domo_sdk.transport.async_transport import AsyncTransport
 from domo_sdk.transport.auth import DeveloperTokenCredentials, DeveloperTokenStrategy
-
-
-class AsyncTextClient(AsyncDomoAPIClient):
-    """Minimal async text client for testing (mirrors TextClient API)."""
-
-    async def generate(self, request: dict) -> dict:
-        return await self._create("/ai/v1/text/generation", request)
-
-
-class AsyncMessagesClient(AsyncDomoAPIClient):
-    """Minimal async messages client for testing (mirrors MessagesClient API)."""
-
-    async def chat(self, request: dict) -> dict:
-        return await self._create("/ai/v1/messages/chat", request)
-
-
-class AsyncAnalysisClient(AsyncDomoAPIClient):
-    """Minimal async analysis client for testing (mirrors AnalysisClient API)."""
-
-    async def sentiment(self, request: dict) -> dict:
-        return await self._create("/ai/v1/sentiment", request)
 
 
 def _make_transport() -> tuple[AsyncTransport, str]:
@@ -45,7 +33,7 @@ class TestAsyncTextClient:
     """Async text generation tests using respx."""
 
     @respx.mock
-    async def test_async_text_generate(self) -> None:
+    async def test_generate(self) -> None:
         """POST /ai/v1/text/generation."""
         transport, base_url = _make_transport()
         client = AsyncTextClient(transport)
@@ -62,9 +50,26 @@ class TestAsyncTextClient:
         result = await client.generate(body)
 
         assert route.called
-        assert result["output"] == "Here is the generated text."
-        assert result["usage"]["totalTokens"] == 30
+        assert isinstance(result, TextAIResponse)
+        assert result.output == "Here is the generated text."
+        assert result.usage.total_tokens == 30
 
+        await transport.close()
+
+    @respx.mock
+    async def test_to_sql(self) -> None:
+        """POST /ai/v1/text/sql."""
+        transport, base_url = _make_transport()
+        client = AsyncTextClient(transport)
+
+        respx.post(f"{base_url}/ai/v1/text/sql").mock(
+            return_value=Response(200, json={"output": "SELECT * FROM sales"})
+        )
+
+        result = await client.to_sql({"input": "show me all sales"})
+
+        assert isinstance(result, TextAIResponse)
+        assert "SELECT" in result.output
         await transport.close()
 
 
@@ -73,7 +78,7 @@ class TestAsyncMessagesClient:
     """Async messages chat tests using respx."""
 
     @respx.mock
-    async def test_async_chat(self) -> None:
+    async def test_chat(self) -> None:
         """POST /ai/v1/messages/chat."""
         transport, base_url = _make_transport()
         client = AsyncMessagesClient(transport)
@@ -95,18 +100,19 @@ class TestAsyncMessagesClient:
         result = await client.chat(body)
 
         assert route.called
-        assert result["role"] == "assistant"
-        assert result["content"][0]["text"] == "Hello!"
+        assert isinstance(result, MessagesAIResponse)
+        assert result.role == "assistant"
+        assert result.content[0]["text"] == "Hello!"
 
         await transport.close()
 
 
 @pytest.mark.asyncio
 class TestAsyncAnalysisClient:
-    """Async sentiment analysis tests using respx."""
+    """Async analysis tests using respx."""
 
     @respx.mock
-    async def test_async_sentiment(self) -> None:
+    async def test_sentiment(self) -> None:
         """POST /ai/v1/sentiment."""
         transport, base_url = _make_transport()
         client = AsyncAnalysisClient(transport)
@@ -123,7 +129,34 @@ class TestAsyncAnalysisClient:
         result = await client.sentiment(body)
 
         assert route.called
-        assert result["sentiment"] == "POSITIVE"
-        assert result["confidence"] == 0.95
+        assert isinstance(result, SentimentAIResponse)
+        assert result.sentiment == "POSITIVE"
+        assert result.confidence == 0.95
+
+        await transport.close()
+
+
+@pytest.mark.asyncio
+class TestAsyncMediaClient:
+    """Async media tests using respx."""
+
+    @respx.mock
+    async def test_embed_text(self) -> None:
+        """POST /ai/v1/embedding/text."""
+        transport, base_url = _make_transport()
+        client = AsyncMediaClient(transport)
+
+        route = respx.post(f"{base_url}/ai/v1/embedding/text").mock(
+            return_value=Response(200, json={
+                "embeddings": [[0.1, 0.2, 0.3]],
+                "model": "text-embedding-3-small",
+            })
+        )
+
+        result = await client.embed_text({"input": "Hello world"})
+
+        assert route.called
+        assert isinstance(result, EmbeddingAIResponse)
+        assert result.embeddings[0] == [0.1, 0.2, 0.3]
 
         await transport.close()

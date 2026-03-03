@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from domo_sdk.async_clients.base import AsyncDomoAPIClient
+from domo_sdk.models.search import SearchResponse
 
 
 class AsyncSearchClient(AsyncDomoAPIClient):
@@ -15,12 +16,13 @@ class AsyncSearchClient(AsyncDomoAPIClient):
     - **oauth**: limited to public API dataset listing with client-side filtering
     """
 
-    async def query(self, search_query: dict) -> dict:
+    async def query(self, search_query: dict) -> SearchResponse:
         """Execute a raw search query (developer token only).
 
         POST /search/v1/query
         """
-        return await self._create("/search/v1/query", search_query)
+        data = await self._create("/search/v1/query", search_query)
+        return SearchResponse.model_validate(data)
 
     async def search_datasets(
         self,

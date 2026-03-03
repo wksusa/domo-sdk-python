@@ -7,6 +7,13 @@ from domo_sdk.clients.ai.analysis import AnalysisClient
 from domo_sdk.clients.ai.media import MediaClient
 from domo_sdk.clients.ai.messages import MessagesClient
 from domo_sdk.clients.ai.text import TextClient
+from domo_sdk.models.ai import (
+    ClassificationAIResponse,
+    EmbeddingAIResponse,
+    MessagesAIResponse,
+    SentimentAIResponse,
+    TextAIResponse,
+)
 
 
 def _make_transport() -> MagicMock:
@@ -33,7 +40,8 @@ class TestTextClient:
             body=body,
             params=None,
         )
-        assert result["output"] == "Generated text"
+        assert isinstance(result, TextAIResponse)
+        assert result.output == "Generated text"
 
     def test_text_to_sql(self) -> None:
         """POST /ai/v1/text/sql."""
@@ -49,7 +57,8 @@ class TestTextClient:
             body=body,
             params=None,
         )
-        assert "SELECT" in result["output"]
+        assert isinstance(result, TextAIResponse)
+        assert "SELECT" in result.output
 
     def test_text_summarize(self) -> None:
         """POST /ai/v1/text/summarize."""
@@ -65,7 +74,20 @@ class TestTextClient:
             body=body,
             params=None,
         )
-        assert result["output"] == "Summary of the text"
+        assert isinstance(result, TextAIResponse)
+        assert result.output == "Summary of the text"
+
+    def test_text_beastmode(self) -> None:
+        """POST /ai/v1/text/beastmode."""
+        transport = _make_transport()
+        transport.post.return_value = {"output": "CASE WHEN `status` = 'Active' THEN 1 ELSE 0 END"}
+        client = TextClient(transport)
+
+        body = {"input": "count active users", "maxTokens": 256}
+        result = client.beastmode(body)
+
+        assert isinstance(result, TextAIResponse)
+        assert "CASE" in result.output
 
 
 class TestMessagesClient:
@@ -93,7 +115,8 @@ class TestMessagesClient:
             body=body,
             params=None,
         )
-        assert result["role"] == "assistant"
+        assert isinstance(result, MessagesAIResponse)
+        assert result.role == "assistant"
 
     def test_messages_tools(self) -> None:
         """POST /ai/v1/messages/tools."""
@@ -117,7 +140,8 @@ class TestMessagesClient:
             body=body,
             params=None,
         )
-        assert result["content"][0]["type"] == "tool_use"
+        assert isinstance(result, MessagesAIResponse)
+        assert result.content[0]["type"] == "tool_use"
 
 
 class TestAnalysisClient:
@@ -137,7 +161,9 @@ class TestAnalysisClient:
             body=body,
             params=None,
         )
-        assert result["sentiment"] == "POSITIVE"
+        assert isinstance(result, SentimentAIResponse)
+        assert result.sentiment == "POSITIVE"
+        assert result.confidence == 0.95
 
     def test_classify(self) -> None:
         """POST /ai/v1/classification."""
@@ -159,7 +185,8 @@ class TestAnalysisClient:
             body=body,
             params=None,
         )
-        assert result["classifications"][0]["label"] == "tech"
+        assert isinstance(result, ClassificationAIResponse)
+        assert result.classifications[0].label == "tech"
 
 
 class TestMediaClient:
@@ -182,5 +209,6 @@ class TestMediaClient:
             body=body,
             params=None,
         )
-        assert len(result["embeddings"]) == 1
-        assert result["embeddings"][0] == [0.1, 0.2, 0.3]
+        assert isinstance(result, EmbeddingAIResponse)
+        assert len(result.embeddings) == 1
+        assert result.embeddings[0] == [0.1, 0.2, 0.3]

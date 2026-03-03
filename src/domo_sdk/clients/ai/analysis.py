@@ -3,6 +3,12 @@
 from __future__ import annotations
 
 from domo_sdk.clients.base import DomoAPIClient
+from domo_sdk.models.ai import (
+    ClassificationAIResponse,
+    ExtractionAIResponse,
+    SentimentAIResponse,
+    TargetedSentimentAIResponse,
+)
 
 URL_BASE = "/ai/v1"
 
@@ -10,30 +16,34 @@ URL_BASE = "/ai/v1"
 class AnalysisClient(DomoAPIClient):
     """Analytical AI endpoints: sentiment, classification, extraction."""
 
-    def sentiment(self, request: dict) -> dict:
+    def sentiment(self, request: dict) -> SentimentAIResponse:
         """Analyse overall sentiment.
 
         POST /ai/v1/sentiment
         """
-        return self._create(f"{URL_BASE}/sentiment", request)
+        data = self._create(f"{URL_BASE}/sentiment", request)
+        return SentimentAIResponse.model_validate(data)
 
-    def targeted_sentiment(self, request: dict) -> dict:
+    def targeted_sentiment(self, request: dict) -> TargetedSentimentAIResponse:
         """Analyse sentiment targeted at specific aspects.
 
         POST /ai/v1/targeted-sentiment
         """
-        return self._create(f"{URL_BASE}/targeted-sentiment", request)
+        data = self._create(f"{URL_BASE}/targeted-sentiment", request)
+        return TargetedSentimentAIResponse.model_validate(data)
 
-    def classify(self, request: dict) -> dict:
+    def classify(self, request: dict) -> ClassificationAIResponse:
         """Classify text.
 
         POST /ai/v1/classification
         """
-        return self._create(f"{URL_BASE}/classification", request)
+        data = self._create(f"{URL_BASE}/classification", request)
+        return ClassificationAIResponse.model_validate(data)
 
-    def extract(self, request: dict) -> dict:
+    def extract(self, request: dict) -> ExtractionAIResponse:
         """Extract structured data from text.
 
         POST /ai/v1/extract
         """
-        return self._create(f"{URL_BASE}/extract", request)
+        data = self._create(f"{URL_BASE}/extract", request)
+        return ExtractionAIResponse.model_validate(data)

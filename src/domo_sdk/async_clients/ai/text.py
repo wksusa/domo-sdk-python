@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from domo_sdk.async_clients.base import AsyncDomoAPIClient
+from domo_sdk.models.ai import TextAIResponse
 
 URL_BASE = "/ai/v1/text"
 
@@ -14,30 +15,34 @@ class AsyncTextClient(AsyncDomoAPIClient):
     and beastmode formula generation.
     """
 
-    async def generate(self, request: dict) -> dict:
+    async def generate(self, request: dict) -> TextAIResponse:
         """Generate text.
 
         POST /ai/v1/text/generation
         """
-        return await self._create(f"{URL_BASE}/generation", request)
+        data = await self._create(f"{URL_BASE}/generation", request)
+        return TextAIResponse.model_validate(data)
 
-    async def to_sql(self, request: dict) -> dict:
+    async def to_sql(self, request: dict) -> TextAIResponse:
         """Convert natural language to SQL.
 
         POST /ai/v1/text/sql
         """
-        return await self._create(f"{URL_BASE}/sql", request)
+        data = await self._create(f"{URL_BASE}/sql", request)
+        return TextAIResponse.model_validate(data)
 
-    async def summarize(self, request: dict) -> dict:
+    async def summarize(self, request: dict) -> TextAIResponse:
         """Summarise text.
 
         POST /ai/v1/text/summarize
         """
-        return await self._create(f"{URL_BASE}/summarize", request)
+        data = await self._create(f"{URL_BASE}/summarize", request)
+        return TextAIResponse.model_validate(data)
 
-    async def beastmode(self, request: dict) -> dict:
+    async def beastmode(self, request: dict) -> TextAIResponse:
         """Generate a beastmode formula.
 
         POST /ai/v1/text/beastmode
         """
-        return await self._create(f"{URL_BASE}/beastmode", request)
+        data = await self._create(f"{URL_BASE}/beastmode", request)
+        return TextAIResponse.model_validate(data)

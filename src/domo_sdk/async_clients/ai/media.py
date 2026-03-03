@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from domo_sdk.async_clients.base import AsyncDomoAPIClient
+from domo_sdk.models.ai import EmbeddingAIResponse, TextAIResponse
 
 URL_BASE = "/ai/v1"
 
@@ -10,23 +11,26 @@ URL_BASE = "/ai/v1"
 class AsyncMediaClient(AsyncDomoAPIClient):
     """Async media-oriented AI endpoints: image-to-text, embeddings."""
 
-    async def image_to_text(self, request: dict) -> dict:
+    async def image_to_text(self, request: dict) -> TextAIResponse:
         """Extract text from an image.
 
         POST /ai/v1/image/text
         """
-        return await self._create(f"{URL_BASE}/image/text", request)
+        data = await self._create(f"{URL_BASE}/image/text", request)
+        return TextAIResponse.model_validate(data)
 
-    async def embed_text(self, request: dict) -> dict:
+    async def embed_text(self, request: dict) -> EmbeddingAIResponse:
         """Generate a text embedding vector.
 
         POST /ai/v1/embedding/text
         """
-        return await self._create(f"{URL_BASE}/embedding/text", request)
+        data = await self._create(f"{URL_BASE}/embedding/text", request)
+        return EmbeddingAIResponse.model_validate(data)
 
-    async def embed_image(self, request: dict) -> dict:
+    async def embed_image(self, request: dict) -> EmbeddingAIResponse:
         """Generate an image embedding vector.
 
         POST /ai/v1/embedding/image
         """
-        return await self._create(f"{URL_BASE}/embedding/image", request)
+        data = await self._create(f"{URL_BASE}/embedding/image", request)
+        return EmbeddingAIResponse.model_validate(data)

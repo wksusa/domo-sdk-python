@@ -179,6 +179,16 @@ class Domo:
         self.ai = AIClient(self.transport)
         self.appdb = AppDBClient(self.transport)
 
+    def close(self) -> None:
+        """Close the underlying transport session."""
+        self.transport._session.close()
+
+    def __enter__(self) -> Domo:
+        return self
+
+    def __exit__(self, *args: Any) -> None:
+        self.close()
+
     @classmethod
     def from_env(
         cls,

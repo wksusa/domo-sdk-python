@@ -4,6 +4,7 @@ from __future__ import annotations
 from unittest.mock import MagicMock
 
 from domo_sdk.clients.search import SearchClient
+from domo_sdk.models.search import SearchResponse
 
 
 def _make_client(auth_mode: str = "developer_token") -> tuple[SearchClient, MagicMock]:
@@ -18,7 +19,7 @@ class TestSearchClient:
     """Tests for SearchClient operations."""
 
     def test_search_query(self) -> None:
-        """POST /search/v1/query."""
+        """POST /search/v1/query returns SearchResponse."""
         client, transport = _make_client()
         transport.post.return_value = {
             "dataSources": [{"id": "ds-1", "name": "Revenue"}],
@@ -37,7 +38,9 @@ class TestSearchClient:
             body=query,
             params=None,
         )
-        assert result["totalCount"] == 1
+        assert isinstance(result, SearchResponse)
+        assert result.total_count == 1
+        assert len(result.data_sources) == 1
 
     def test_search_datasets_dev_token(self) -> None:
         """Developer token mode uses POST /data/ui/v3/datasources/search."""
