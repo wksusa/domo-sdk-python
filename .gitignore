@@ -41,3 +41,4 @@ publishPypiTest.sh
 # Environment
 .env
 .env.local
+uv.lock
