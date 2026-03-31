@@ -48,3 +48,9 @@ tests/
 - **Project ID**: 20997992-c296-4530-93ae-90b79b15888c
 - **Project URL**: https://linear.app/wksusa/project/domo-sdk-python-6deeecba3598
 - **Team**: AI Labs
+
+## Router Hints
+
+- **Description**: Domo API, dataset queries, SDK
+- **Senders**: *@domo.com
+- **Keywords**: domo, dataset, API, SDK

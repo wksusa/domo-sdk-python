@@ -162,7 +162,7 @@ class AsyncDataSetClient(AsyncDomoAPIClient):
 
     async def query(self, dataset_id: str, sql: str) -> QueryResult:
         """Execute a SQL query against a DataSet."""
-        url = f"{URL_BASE}/query/execute/{dataset_id}"
+        url = f"/query/v1/execute/{dataset_id}"
         data = await self._create(url, {"sql": sql})
         return QueryResult.model_validate(data)
 
